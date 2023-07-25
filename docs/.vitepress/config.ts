@@ -18,5 +18,6 @@ export default defineConfig({
       provider: 'local'
     }
   },
-  base:'/blog_vitepress/'
+  base:'/blog_vitepress/',
+  outDir:'../blog_vitepress'
 })
