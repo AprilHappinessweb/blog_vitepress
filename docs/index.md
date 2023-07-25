@@ -2,7 +2,7 @@
 # https://vitepress.dev/reference/default-theme-home-page
 layout: home
 
-title: 美少女前端的博客
+title: skpr团队的博客
 titleTemplate: 一起来学习吧
 editLink: true
 lastUpdated: true
