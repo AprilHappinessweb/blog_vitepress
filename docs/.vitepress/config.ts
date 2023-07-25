@@ -3,8 +3,8 @@ import { nav,sidebar } from './relaConf'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  title: "前端美少女",
-  description: "一个小前端的博客空间",
+  title: "skpr",
+  description: "前端面试题集",
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     logo: '/images/avatar.png',

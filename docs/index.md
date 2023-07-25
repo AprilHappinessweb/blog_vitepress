@@ -8,8 +8,8 @@ editLink: true
 lastUpdated: true
 
 hero:
-  name: "前端美少女"
-  text: "正在找工作的前端一枚"
+  name: "skpr"
+  text: "新星之火"
   tagline: 可以不万丈光芒，但不要停止发光，你坚持的东西总有一天会反过来拥抱你
   image:
         # 首页右边的图片
