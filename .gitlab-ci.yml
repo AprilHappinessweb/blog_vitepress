@@ -1,0 +1,14 @@
+image: node:16
+pages:
+  cache:
+    paths:
+      - node_modules/
+  script:
+    # - apk add git # Uncomment this if you're using small docker images like alpine and have lastUpdated enabled
+    - npm install
+    - npm run docs:build
+  artifacts:
+    paths:
+      - public
+  only:
+    - main
