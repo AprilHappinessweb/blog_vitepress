@@ -36,12 +36,12 @@ export default {
          name: "april",
          label: "精致的猪猪女士" ,
          great:'Vue',
-         avatarUrl:'/images/teamMember1.png'
+         avatarUrl:'/blog_vitepress/images/teamMember1.png'
         },{ 
          name: "晓",
          label: "美少年前端一枚" ,
          great:'Vue',
-         avatarUrl:'/images/teamMember2.png'
+         avatarUrl:'/blog_vitepress/images/teamMember2.png'
         },
       ],
     };
