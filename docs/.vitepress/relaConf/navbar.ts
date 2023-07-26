@@ -35,51 +35,33 @@ export const nav: DefaultTheme.NavItem[] = [
       }
     ]
   },
-  // {
-  //   text: '经典项目demo',
-  //   link: '/column/Growing/'
-  // },
-  // {
-  //   text: '前端调试和优化',
-  //   items: [
-  //     {
-  //       text: 'Webpack',
-  //       link: 'https://juejin.cn/user/3131845139247960/posts'
-  //     },
-  //     {
-  //       text: 'Vite',
-  //       link: 'https://github.com/Jacqueline712',
-  //     },
-  //     {
-  //       text: 'Mock数据',
-  //       link: 'https://github.com/Jacqueline712',
-  //     }
-  //   ]
-  // },
-  // {
-  //   text: '其他',
-  //   items: [
-  //     {
-  //       text: '常见的Git命令',
-  //       link: 'https://juejin.cn/user/3131845139247960/posts'
-  //     },
+  {
+    text: '前端调试和优化',
+    items: [
+      {
+        text: 'Webpack',
+        link: '/column/tool/webpack/'
+      },
+      {
+        text: 'Vite',
+        link: '/column/tool/vite/',
+      },
+      {
+        text: '模拟数据',
+        link: '/column/tool/mock/',
+      },
+      {
+        text: 'Git',
+        link: '/column/tool/git/',
+      }
+    ]
+  },
   //     {
   //       text: 'Echarts',
   //       link: 'https://github.com/Jacqueline712',
   //     }
-  //   ]
-  // },
   {
-    text: '关于我',
-    items: [
-      {
-        text: '掘金',
-        link: 'https://juejin.cn/user/1292681406322365'
-      },
-      {
-        text: 'Github',
-        link: 'https://github.com/AprilHappinessweb',
-      }
-    ]
+    text: '关于我们',
+    link:'/column/ours/'
   }
 ];

@@ -12,7 +12,7 @@ export default defineConfig({
 
     sidebar: sidebar,
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/AprilHappinessweb' }
+      { icon: 'github', link: 'https://github.com/AprilHappinessweb/blog_vitepress' }
     ],
     search: {
       provider: 'local'

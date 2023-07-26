@@ -36,7 +36,7 @@ features:
     details: 相信自己能够飞起来
 ---
 
-<script setup>
+<!-- <script setup>
   import home from './components/home.vue'
 </script>
-<!-- <home/> -->
+<home/> -->
