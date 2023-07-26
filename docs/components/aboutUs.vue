@@ -36,12 +36,12 @@ export default {
          name: "april",
          label: "精致的猪猪女士" ,
          great:'Vue',
-         avatarUrl:'/public/images/teamMember1.png'
+         avatarUrl:'/images/teamMember1.png'
         },{ 
          name: "晓",
          label: "美少年前端一枚" ,
          great:'Vue',
-         avatarUrl:'/public/images/teamMember2.png'
+         avatarUrl:'/images/teamMember2.png'
         },
       ],
     };
@@ -74,12 +74,14 @@ export default {
     padding-top: 32px;
     display: flex;
     justify-content: space-between;
+    flex-wrap: wrap;
     .teamMember {
       padding: 40px;
       border-radius: 8px;
       background-color: #f9f9f9;
       transition: background-color 0.5s;
       display: flex;
+      margin-bottom: 20px;
       .avatar {
         width: 80px;
         height: 80px;
