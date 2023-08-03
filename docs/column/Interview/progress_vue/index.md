@@ -24,8 +24,94 @@ Fragment（片段）/Telepot（瞬移）/Suspense(不确定)
 在传统的Vue OptionsAPI中，新增或者修改一个需求，就需要分别在data，methods，computed里修改 ，滚动条反复上下移动；vue3中使用Compisition API我们可以更加优雅的组织我们的代码，函数。让相关功能的代码更加有序的组织在一起。
 ### 8. Vue3更好的支持TS。
 
+## 响应原理
+### vue2响应原理-Object.defineProperty方法
+```
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <script>
+    let number = 19;
+    let exmpleObject = {
+      name:'lihua',
+      sex:'woman'
+    }
+    Object.defineProperty(exmpleObject,'age',{
+      // value:18,
+      enumerable:true,//控制属性是否可以枚举，默认值是false
+      // writable:true,//控制属性是否可以被修改，默认值是false
+      configurable:true,//控制属性是否可以被删除，默认值false
+      //当有人读取exmpleObject的age属性时，get函数（getter）就会被调用，且返回的值就是age的值
+      get(){
+        return number
+      },
+      //当有人修改exmpleObject的age属性时，set函数（setter）就会被调用，且会收到修改的具体值
+      set(value){
+        console.log('修改',value)
+        number = value
+      }
+    })
+    console.log(Object.keys(exmpleObject))
+    console.log(exmpleObject)
+  </script>
+</body>
+</html>
+```
+### vue3响应式的原理-proxy代理
+```
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <script>
+    let user = {
+      name: "Jack",
+      age: 20,
+      wife: {
+        name: "lucy",
+        age: 18,
+        cars: ["奔驰", "宝马", "玛莎拉蒂"],
+      },
+    }
+    const proxyUser = new Proxy(user,{
+      get(target,prop){
+        console.log('get方法调用了')
+        return Reflect.get(target,prop)
+      },
+      set(target,prop,val){
+        console.log('set方法调用了')
+        return Reflect.set(target,prop,val)
+      },
+      deleteProperty(target,prop){
+        console.log('delete方法调用了')
+        return Reflect.deleteProperty(target,prop)
+      }
+    })
+    console.log(proxyUser.name)
+    proxyUser.name = '鸣人'
+    console.log(user)
+    proxyUser.gender = '男'
+    console.log(user)
+    delete proxyUser.name
+    console.log(user)
+    proxyUser.wife.name = '森碟'
+    console.log(user)
 
-
+  </script>
+</body>
+</html>
+```
 
 ## 双向数据绑定的原理
 Vue.js 是采用 __数据劫持__ 结合 __发布者-订阅者模式__ 的方式，通过Object.defineProperty()（vue3.0使用proxy ）来劫持各个属性的setter，getter，在数据变动时发布消息给订阅者，触发相应的监听回调。主要分为以下几个步骤：
@@ -35,6 +121,535 @@ Vue.js 是采用 __数据劫持__ 结合 __发布者-订阅者模式__ 的方式
 3. Watcher订阅者是Observer和Compile之间通信的桥梁，主要做的事情是: ①在自身实例化时往属性订阅器(dep)里面添加自己 ②自身必须有一个update()方法 ③待属性变动dep.notice()通知时，能调用自身的update()方法，并触发Compile中绑定的回调，则功成身退。
 4. MVVM作为数据绑定的入口，整合Observer、Compile和Watcher三者，通过Observer来监听自己的model数据变化，通过Compile来解析编译模板指令，最终利用Watcher搭起Observer和Compile之间的通信桥梁，达到数据变化 -> 视图更新；视图交互变化(input) -> 数据model变更的双向绑定效果。
 ![Alt text](/public/images/base_http/image.png)
+
+## diff算法
+在新老虚拟DOM对比时：
+
+首先，对比节点本身，判断是否为同一节点，如果不为相同节点，则删除该节点重新创建节点进行替换
+如果为相同节点，进行patchVnode，判断如何对该节点的子节点进行处理，先判断一方有子节点一方没有子节点的情况(如果新的children没有子节点，将旧的子节点移除)
+比较如果都有子节点，则进行updateChildren，判断如何对这些新老节点的子节点进行操作（diff核心）。
+匹配时，找到相同的子节点，递归比较子节点
+在diff中，只对同层的子节点进行比较，放弃跨级的节点比较，使得时间复杂从O(n3)降低值O(n)，也就是说，只有当新旧children都为多个子节点时才需要用核心的Diff算法进行同层级比较。
+
+## vue3组合式API-Setup
+[setup()](https://cn.vuejs.org/api/composition-api-setup.html) 钩子是在组件中使用组合式 API 的入口，通常只在以下情况下使用：
+需要在非单文件组件中使用组合式 API 时。
+需要在基于选项式 API 的组件中集成基于组合式 API 的代码时。
+
+## vue3的变量定义[ref()](https://cn.vuejs.org/api/reactivity-core.html)和[reactive()](https://cn.vuejs.org/api/reactivity-core.html#reactive)
++ ref()接受一个内部值，返回一个响应式的、可更改的 ref 对象，此对象只有一个指向其内部值的属性 .value。
++ reactive()返回一个对象的响应式代理。值得注意的是，当访问到某个响应式数组或 Map 这样的原生集合类型中的 ref 元素时，不会执行 ref 的解包。
+
+## [computed](https://cn.vuejs.org/api/reactivity-core.html#computed)原理
+接受一个 getter 函数，返回一个只读的响应式 ref 对象。该 ref 通过.value暴露 getter 函数的返回值。它也可以接受一个带有 get 和 set 函数的对象来创建一个可写的 ref 对象。
+
+## watch和watchEffect的区别
+watch里面配置immediate才会默认执行一次，watchEffect不需要配置immediate，本身默认就会进行监视。
+非响应式的参数可使用 ()=>参数 的方法来实现响应。
+## 收集表单数据
+![Alt text](/public/images/progress_vue/image-4.png)
+```
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="../js/vue.js"></script>
+</head>
+
+<body>
+  <div id="root">
+    <form @submit.prevent="demo">
+      <label for="zhanghao">账号：</label>
+      <input type="text" id="zhanghao" v-model.trim="userInfo.account">
+      <br><br>
+      <label for="password">密码：</label>
+      <input type="text" id="password" v-model="userInfo.password">
+      <br><br>
+      <label for="password">年龄：</label>
+      <input type="number" id="password" v-model.number="userInfo.age">
+      <br><br>
+      <label for="sex">性别：</label>
+      男<input type="radio" name="sex" value="男" v-model="userInfo.sex">
+      女<input type="radio" name="sex" value="女" v-model="userInfo.sex">
+      <br><br>
+      <label for="hobby">爱好：</label>
+      学习<input type="checkbox" name="hobby" v-model="userInfo.hobby" value="1">
+      打游戏<input type="checkbox" name="hobby" v-model="userInfo.hobby" value="2">
+      吃饭<input type="checkbox" name="hobby" v-model="userInfo.hobby" value="3">
+      <br><br>
+      所属校区
+      <select v-model="userInfo.city">
+        <option value="">请选择校区</option>
+        <option value="beijing">北京</option>
+        <option value="shenzhen">深圳</option>
+        <option value="shanghai">上海</option>
+        <option value="wuhan">武汉</option>
+      </select>
+      <br><br>
+      其他信息：
+      <textarea v-model="userInfo.other"></textarea>
+      <br><br>
+      <input type="checkbox" v-model="userInfo.agree">阅读并接受<a href="www.baidu.com">阅读协议</a>
+      <br><br>
+      <button>提交</button>
+    </form>
+  </div>
+  <script>
+    new Vue({
+      el: '#root',
+      data: {
+        userInfo: {
+          account: '',
+          password: '',
+          age:'',
+          sex: '',
+          hobby: [],
+          city: '',
+          other: '',
+          agree: ''
+        }
+      },
+      methods: {
+        demo() {
+          console.log(JSON.stringify(this.userInfo))
+        }
+      },
+    });
+  </script>
+</body>
+
+</html>
+```
+## Vue的生命周期
+Vue3的生命周期示意图如下：
+![Alt text](/public/images/progress_vue/image-1.png)
+Vue2的生命周期示意图如下：
+![Alt text](/public/images/base_http/image-2.png)
+代码示意：
+![Alt text](/public/images/base_http/image-3.png)
+
+## vue组件封装原则
+1. 数据从父组件传入；
+2. 在父组件中处理事件；
+3. 留一个slot；
+4. 不要依赖vuex/pinia，可以选择放到localstorage中，或者通过props传递等方式；
+5. 合理使用scoped；
+6. 组件具有单一原则，不够单一再抽离。
+## 组件通信
+**通信仓库地址:https://gitee.com/jch1011/vue3_communication.git**
+
+不管是vue2还是vue3,组件通信方式很重要,不管是项目还是面试都是经常用到的知识点。
+
+**比如:vue2组件通信方式**
+>**props,emit**: 可以实现父子组件、子父组件、甚至兄弟组件通信  
+>**自定义事件**: 可以实现子父组件通信  
+>**全局事件总线$bus**: 可以实现任意组件通信  
+>**pubsub**: 发布订阅模式实现任意组件通信  
+>**vuex**: 集中式状态管理容器，实现任意组件通信  
+>**ref**: 父组件获取子组件实例VC,获取子组件的响应式数据以及方法  
+>**slot** 插槽(默认插槽、具名插槽、作用域插槽)实现父子组件通信........  
+
+深入学习可以参考[《尚硅谷Vue项目实战硅谷甄选-组件通信方式》(bilibili)](https://www.bilibili.com/video/BV1Xh411V7b5?p=3&vd_source=1a8169a934e13ebae47b8fee74976ed2)
+
+### 1.1props
+
+props可以实现父子组件通信,在vue3中我们可以通过defineProps获取父组件传递的数据。且在组件内部不需要引入defineProps方法可以直接使用！
+
+**父组件给子组件传递数据**
+
+```
+<Child info="我爱祖国" :money="money"></Child>
+```
+
+**子组件获取父组件传递数据:方式1**
+
+```
+let props = defineProps({
+  info:{
+   type:String,//接受的数据类型
+   default:'默认参数',//接受默认数据
+  },
+  money:{
+   type:Number,
+   default:0
+}})
+```
+
+**子组件获取父组件传递数据:方式2**
+
+```
+let props = defineProps(["info",'money']);
+```
+
+子组件获取到props数据就可以在模板中使用了,但是切记props是只读的(只能读取，不能修改)
+
+### 1.2自定义事件
+
+在vue框架中事件分为两种:一种是原生的DOM事件，另外一种自定义事件。
+
+原生DOM事件可以让用户与网页进行交互，比如click、dbclick、change、mouseenter、mouseleave....
+
+自定义事件可以实现子组件给父组件传递数据
+
+#### 1.2.1原生DOM事件
+
+代码如下:
+
+```
+ <pre @click="handler">
+      我是祖国的老花骨朵
+ </pre>
+```
+
+
+当前代码级给pre标签绑定原生DOM事件点击事件,默认会给事件回调注入event事件对象。当然点击事件想注入多个参数可以按照下图操作。但是切记注入的事件对象务必叫做$event.
+
+```
+  <div @click="handler1(1,2,3,$event)">我要传递多个参数</div>
+```
+
+在vue3框架click、dbclick、change(这类原生DOM事件),不管是在标签、自定义标签上(组件标签)都是原生DOM事件。
+
+**<!--vue2中却不是这样的,在vue2中组件标签需要通过native修饰符才能变为原生DOM事件-->**
+
+#### 1.2.2自定义事件
+
+自定义事件可以实现子组件给父组件传递数据.在项目中是比较常用的。
+
+比如在父组件内部给子组件(Event2)绑定一个自定义事件
+
+```
+<Event2  @xxx="handler3"></Event2>
+```
+
+在Event2子组件内部触发这个自定义事件
+
+```
+<template>
+  <div>
+    <h1>我是子组件2</h1>
+    <button @click="handler">点击我触发xxx自定义事件</button>
+  </div>
+</template>
+
+<script setup lang="ts">
+let $emit = defineEmits(["xxx"]);
+const handler = () => {
+  $emit("xxx", "法拉利", "茅台");
+};
+</script>
+<style scoped>
+</style>
+```
+
+我们会发现在script标签内部,使用了defineEmits方法，此方法是vue3提供的方法,不需要引入直接使用。defineEmits方法执行，传递一个数组，数组元素即为将来组件需要触发的自定义事件类型，此方执行会返回一个$emit方法用于触发自定义事件。
+
+当点击按钮的时候，事件回调内部调用$emit方法去触发自定义事件,第一个参数为触发事件类型，第二个、三个、N个参数即为传递给父组件的数据。
+
+需要注意的是:代码如下
+
+```
+<Event2  @xxx="handler3" @click="handler"></Event2>
+```
+
+正常说组件标签书写@click应该为原生DOM事件,但是如果子组件内部通过defineEmits定义就变为自定义事件了
+
+```
+let $emit = defineEmits(["xxx",'click']);
+```
+
+### 1.3全局事件总线
+
+全局事件总线可以实现任意组件通信，在vue2中可以根据VM与VC关系推出全局事件总线。
+
+但是在vue3中没有Vue构造函数，也就没有Vue.prototype.以及组合式API写法没有this，
+
+那么在Vue3想实现全局事件的总线功能就有点不现实啦，如果想在Vue3中使用全局事件总线功能
+
+可以使用插件mitt实现。
+
+**mitt:官网地址:https://www.npmjs.com/package/mitt**
+
+### 1.4v-model
+
+v-model指令可是收集表单数据(数据双向绑定)，除此之外它也可以实现父子组件数据同步。
+
+而v-model实指利用props[modelValue]与自定义事件[update:modelValue]实现的。
+
+下方代码:相当于给组件Child传递一个props(modelValue)与绑定一个自定义事件update:modelValue
+
+实现父子组件数据同步
+
+```
+<Child v-model="msg"></Child>
+```
+
+在vue3中一个组件可以通过使用多个v-model,让父子组件多个数据同步,下方代码相当于给组件Child传递两个props分别是pageNo与pageSize，以及绑定两个自定义事件update:pageNo与update:pageSize实现父子数据同步
+
+```
+<Child v-model:pageNo="msg" v-model:pageSize="msg1"></Child>
+```
+
+
+
+### 1.5useAttrs
+
+在Vue3中可以利用useAttrs方法获取组件的属性与事件(包含:原生DOM事件或者自定义事件),次函数功能类似于Vue2框架中$attrs属性与$listeners方法。
+
+比如:在父组件内部使用一个子组件my-button
+
+```
+<my-button type="success" size="small" title='标题' @click="handler"></my-button>
+```
+
+子组件内部可以通过useAttrs方法获取组件属性与事件.因此你也发现了，它类似于props,可以接受父组件传递过来的属性与属性值。需要注意如果defineProps接受了某一个属性，useAttrs方法返回的对象身上就没有相应属性与属性值。
+
+```
+<script setup lang="ts">
+import {useAttrs} from 'vue';
+let $attrs = useAttrs();
+</script>
+```
+
+
+
+### 1.6ref与$parent
+
+
+
+ref,提及到ref可能会想到它可以获取元素的DOM或者获取子组件实例的VC。既然可以在父组件内部通过ref获取子组件实例VC，那么子组件内部的方法与响应式数据父组件可以使用的。
+
+比如:在父组件挂载完毕获取组件实例
+
+父组件内部代码:
+
+```
+<template>
+  <div>
+    <h1>ref与$parent</h1>
+    <Son ref="son"></Son>
+  </div>
+</template>
+<script setup lang="ts">
+import Son from "./Son.vue";
+import { onMounted, ref } from "vue";
+const son = ref();
+onMounted(() => {
+  console.log(son.value);
+});
+</script>
+```
+
+但是需要注意，如果想让父组件获取子组件的数据或者方法需要通过defineExpose对外暴露,因为vue3中组件内部的数据对外“关闭的”，外部不能访问
+
+```
+<script setup lang="ts">
+import { ref } from "vue";
+//数据
+let money = ref(1000);
+//方法
+const handler = ()=>{
+}
+defineExpose({
+  money,
+   handler
+})
+</script>
+```
+
+$parent可以获取某一个组件的父组件实例VC,因此可以使用父组件内部的数据与方法。必须子组件内部拥有一个按钮点击时候获取父组件实例，当然父组件的数据与方法需要通过defineExpose方法对外暴露
+
+```
+<button @click="handler($parent)">点击我获取父组件实例</button>
+```
+
+### 1.7provide与inject
+
+**provide[提供]**
+
+**inject[注入]**
+
+vue3提供两个方法provide与inject,可以实现隔辈组件传递参数
+
+组件组件提供数据:
+
+provide方法用于提供数据，此方法执需要传递两个参数,分别提供数据的key与提供数据value
+
+```
+<script setup lang="ts">
+import {provide} from 'vue'
+provide('token','admin_token');
+</script>
+```
+
+后代组件可以通过inject方法获取数据,通过key获取存储的数值
+
+```
+<script setup lang="ts">
+import {inject} from 'vue'
+let token = inject('token');
+</script>
+```
+
+### 1.8 pinia
+
+**pinia官网:https://pinia.web3doc.top/**
+
+pinia也是集中式管理状态容器,类似于vuex。但是核心概念没有mutation、modules,使用方式参照官网
+
+### 1.9slot
+
+插槽：默认插槽、具名插槽、作用域插槽可以实现父子组件通信.
+
+**默认插槽:**
+
+在子组件内部的模板中书写slot全局组件标签
+
+```
+<template>
+  <div>
+    <slot></slot>
+  </div>
+</template>
+<script setup lang="ts">
+</script>
+<style scoped>
+</style>
+```
+
+在父组件内部提供结构：Todo即为子组件,在父组件内部使用的时候，在双标签内部书写结构传递给子组件
+
+注意开发项目的时候默认插槽一般只有一个
+
+```
+<Todo>
+  <h1>我是默认插槽填充的结构</h1>
+</Todo>
+```
+
+**具名插槽：**
+
+顾名思义，此插槽带有名字在组件内部留多个指定名字的插槽。
+
+下面是一个子组件内部,模板中留两个插槽
+
+```
+<template>
+  <div>
+    <h1>todo</h1>
+    <slot name="a"></slot>
+    <slot name="b"></slot>
+  </div>
+</template>
+<script setup lang="ts">
+</script>
+
+<style scoped>
+</style>
+```
+
+父组件内部向指定的具名插槽传递结构。需要注意v-slot：可以替换为#
+
+```
+<template>
+  <div>
+    <h1>slot</h1>
+    <Todo>
+      <template v-slot:a>  //可以用#a替换
+        <div>填入组件A部分的结构</div>
+      </template>
+      <template v-slot:b>//可以用#b替换
+        <div>填入组件B部分的结构</div>
+      </template>
+    </Todo>
+  </div>
+</template>
+
+<script setup lang="ts">
+import Todo from "./Todo.vue";
+</script>
+<style scoped>
+</style>
+```
+
+**作用域插槽**
+
+作用域插槽：可以理解为，子组件数据由父组件提供，但是子组件内部决定不了自身结构与外观(样式)
+
+子组件Todo代码如下:
+
+```
+<template>
+  <div>
+    <h1>todo</h1>
+    <ul>
+     <!--组件内部遍历数组-->
+      <li v-for="(item,index) in todos" :key="item.id">
+         <!--作用域插槽将数据回传给父组件-->
+         <slot :$row="item" :$index="index"></slot>
+      </li>
+    </ul>
+  </div>
+</template>
+<script setup lang="ts">
+defineProps(['todos']);//接受父组件传递过来的数据
+</script>
+<style scoped>
+</style>
+```
+
+父组件内部代码如下:
+
+```
+<template>
+  <div>
+    <h1>slot</h1>
+    <Todo :todos="todos">
+      <template v-slot="{$row,$index}">
+         <!--父组件决定子组件的结构与外观-->
+         <span :style="{color:$row.done?'green':'red'}">{{$row.title}}</span>
+      </template>
+    </Todo>
+  </div>
+</template>
+
+<script setup lang="ts">
+import Todo from "./Todo.vue";
+import { ref } from "vue";
+//父组件内部数据
+let todos = ref([
+  { id: 1, title: "吃饭", done: true },
+  { id: 2, title: "睡觉", done: false },
+  { id: 3, title: "打豆豆", done: true },
+]);
+</script>
+<style scoped>
+</style>
+```
+
+## [Pina](https://pinia.vuejs.org/zh/core-concepts/)和[vuex](https://vuex.vuejs.org/zh/)
+Pina和vuex都可用于Vue 的状态管理库。
+
+__对比 Vuex__
+
+Pinia 起源于一次探索 Vuex 下一个迭代的实验，因此结合了 Vuex 5 核心团队讨论中的许多想法。最后，我们意识到 Pinia 已经实现了我们在 Vuex 5 中想要的大部分功能，所以决定将其作为新的推荐方案来代替 Vuex。
+
+与 Vuex 相比，Pinia 不仅提供了一个更简单的 API，也提供了符合组合式 API 风格的 API，最重要的是，搭配 TypeScript 一起使用时有非常可靠的类型推断支持。
+## keep-alive
+### 1. keep-alive原理
+他是通过一个算法，对页面进行缓存。使用频率搞的会放上面，使用频率少的会在最后，如果最后装满了，使用频率不高的，会清除掉。
+使用场景，一般是列表去详情，然后回来，缓存列表。 还加一个生命周期，activityed ，如果缓存命中后会调用这个方法。
+### 2. keep-alive 中的生命周期哪些
+keep-alive是 Vue 提供的一个内置组件，用来对组件进行缓存——在组件切换过程中将状态保留在内存中，防止重复渲染DOM。
+
+如果为一个组件包裹了 keep-alive，那么它会多出两个生命周期：deactivated、activated。同时，beforeDestroy 和 destroyed 就不会再被触发了，因为组件不会被真正销毁。
+
+当组件被换掉时，会被缓存到内存中、触发 deactivated 生命周期；当组件被切回来时，再去缓存里找这个组件、触发 activated钩子函数。
+
 
 ## $nextTick 原理及作用
 Vue 的 nextTick 其本质是对 JavaScript 执行原理 EventLoop 的一种应用。
@@ -60,64 +675,6 @@ this.$nextTick(() => {    // 获取数据的操作...})
 + 在vue生命周期中，如果在created()钩子进行DOM操作，也一定要放在nextTick()的回调函数中。
 
 因为在created()钩子函数中，页面的DOM还未渲染，这时候也没办法操作DOM，所以，此时如果想要操作DOM，必须将操作的代码放在nextTick()的回调函数中。
-
-## diff算法
-在新老虚拟DOM对比时：
-
-首先，对比节点本身，判断是否为同一节点，如果不为相同节点，则删除该节点重新创建节点进行替换
-如果为相同节点，进行patchVnode，判断如何对该节点的子节点进行处理，先判断一方有子节点一方没有子节点的情况(如果新的children没有子节点，将旧的子节点移除)
-比较如果都有子节点，则进行updateChildren，判断如何对这些新老节点的子节点进行操作（diff核心）。
-匹配时，找到相同的子节点，递归比较子节点
-在diff中，只对同层的子节点进行比较，放弃跨级的节点比较，使得时间复杂从O(n3)降低值O(n)，也就是说，只有当新旧children都为多个子节点时才需要用核心的Diff算法进行同层级比较。
-
-## Setup
-[setup()](https://cn.vuejs.org/api/composition-api-setup.html) 钩子是在组件中使用组合式 API 的入口，通常只在以下情况下使用：
-需要在非单文件组件中使用组合式 API 时。
-需要在基于选项式 API 的组件中集成基于组合式 API 的代码时。
-
-## vue组件封装原则
-1. 数据从父组件传入；
-2. 在父组件中处理事件；
-3. 留一个slot；
-4. 不要依赖vuex/pinia，可以选择放到localstorage中，或者通过props传递等方式；
-5. 合理使用scoped；
-6. 组件具有单一原则，不够单一再抽离。
-
-## 组件通讯
-+ 父子通信用prop跟emit；
-+ 兄弟通讯和隔代通讯用Vuex  event bus.  浏览器缓存
-+ 还可以用inject provide。
-
-## vue3的变量定义[ref()](https://cn.vuejs.org/api/reactivity-core.html)和[reactive()](https://cn.vuejs.org/api/reactivity-core.html#reactive)
-+ ref()接受一个内部值，返回一个响应式的、可更改的 ref 对象，此对象只有一个指向其内部值的属性 .value。
-+ reactive()返回一个对象的响应式代理。值得注意的是，当访问到某个响应式数组或 Map 这样的原生集合类型中的 ref 元素时，不会执行 ref 的解包。
-
-## [Pina](https://pinia.vuejs.org/zh/core-concepts/)和[vuex](https://vuex.vuejs.org/zh/)
-Pina和vuex都可用于Vue 的状态管理库。
-
-__对比 Vuex__
-
-Pinia 起源于一次探索 Vuex 下一个迭代的实验，因此结合了 Vuex 5 核心团队讨论中的许多想法。最后，我们意识到 Pinia 已经实现了我们在 Vuex 5 中想要的大部分功能，所以决定将其作为新的推荐方案来代替 Vuex。
-
-与 Vuex 相比，Pinia 不仅提供了一个更简单的 API，也提供了符合组合式 API 风格的 API，最重要的是，搭配 TypeScript 一起使用时有非常可靠的类型推断支持。
-
-## keep-alive
-### 1. keep-alive原理
-他是通过一个算法，对页面进行缓存。使用频率搞的会放上面，使用频率少的会在最后，如果最后装满了，使用频率不高的，会清除掉。
-使用场景，一般是列表去详情，然后回来，缓存列表。 还加一个生命周期，activityed ，如果缓存命中后会调用这个方法。
-### 2. keep-alive 中的生命周期哪些
-keep-alive是 Vue 提供的一个内置组件，用来对组件进行缓存——在组件切换过程中将状态保留在内存中，防止重复渲染DOM。
-
-如果为一个组件包裹了 keep-alive，那么它会多出两个生命周期：deactivated、activated。同时，beforeDestroy 和 destroyed 就不会再被触发了，因为组件不会被真正销毁。
-
-当组件被换掉时，会被缓存到内存中、触发 deactivated 生命周期；当组件被切回来时，再去缓存里找这个组件、触发 activated钩子函数。
-
-## [computed](https://cn.vuejs.org/api/reactivity-core.html#computed)原理
-接受一个 getter 函数，返回一个只读的响应式 ref 对象。该 ref 通过.value暴露 getter 函数的返回值。它也可以接受一个带有 get 和 set 函数的对象来创建一个可写的 ref 对象。
-
-## watch和watchEffect的区别
-watch里面配置immediate才会默认执行一次，watchEffect不需要配置immediate，本身默认就会进行监视。
-非响应式的参数可使用 ()=>参数 的方法来实现响应。
 
 ## [Vue Router](https://router.vuejs.org/zh/introduction.html)路由
 ### 1. Vue-Router 的懒加载如何实现
@@ -289,13 +846,6 @@ devServer: {
   },
 ```
 
-## Vue的生命周期
-Vue3的生命周期示意图如下：
-![Alt text](/public/images/progress_vue/image-1.png)
-Vue2的生命周期示意图如下：
-![Alt text](/public/images/base_http/image-2.png)
-代码示意：
-![Alt text](/public/images/base_http/image-3.png)
 
 ## 参考来源
 > 来自：程序IT圈 ——《详解 30 道 Vue 面试题（建议收藏）》(知乎)  
@@ -304,10 +854,13 @@ Vue2的生命周期示意图如下：
 > 来自：不太帅的程序员 ——《83个关于「Vue的高频面试」问题整理，适合面试或者全面学习》(知乎)  
 > 链接：https://zhuanlan.zhihu.com/p/438669938?utm_id=0
 
->来自：WILLCSDNKK ——《Vue3对比Vue2的改动有哪些》(CSDN)
+>来自：WILLCSDNKK ——《Vue3对比Vue2的改动有哪些》(CSDN)  
 >链接：https://blog.csdn.net/WILLCSDNKK/article/details/120021612
 
->来自：幕布斯7119047 ——《Vue组件封装原则，全网最详细》(慕课网)
+>来自：幕布斯7119047 ——《Vue组件封装原则，全网最详细》(慕课网)  
 >链接：https://www.imooc.com/article/326149/
 
 > 《Vue.js设计与实现》霍春阳 著
+
+>来自：尚硅谷 ——《尚硅谷Vue项目实战硅谷甄选，vue3项目+TypeScript前端项目一套通关 讲师：贾成豪》(bilibili)  
+>链接：https://www.bilibili.com/video/BV1Xh411V7b5/?vd_source=1a8169a934e13ebae47b8fee74976ed2
