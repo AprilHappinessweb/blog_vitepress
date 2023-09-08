@@ -188,6 +188,8 @@ HTTP/2 有哪些改进？（很大可能问原理）
    
 此内容由“晓”整理。
 
+## HTTP与HTTPS的区别是什么？
+
 ## 推荐文章和视频
 ### 1. [30分钟弄懂浏览器历史与渲染基本流程 / 浏览器工作原理入门教程](https://www.bilibili.com/video/BV1tc41157Va/?spm_id_from=333.337.search-card.all.click&vd_source=1a8169a934e13ebae47b8fee74976ed2)
 >该视频学习要点笔记：
@@ -220,3 +222,6 @@ HTTP/2 有哪些改进？（很大可能问原理）
 
 > 来自：程序员顺仔 ——《聊聊跨域的原理与解决方法》(稀土掘金)  
 > 链接：https://juejin.cn/post/6844903779700047885
+
+> 来自：老刘 ——《HTTP与HTTPS的区别是什么？》(知乎)  
+> 链接：https://zhuanlan.zhihu.com/p/389041095

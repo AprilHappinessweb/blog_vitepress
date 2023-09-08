@@ -140,12 +140,52 @@ Vue.js 是采用 __数据劫持__ 结合 __发布者-订阅者模式__ 的方式
 + ref()接受一个内部值，返回一个响应式的、可更改的 ref 对象，此对象只有一个指向其内部值的属性 .value。
 + reactive()返回一个对象的响应式代理。值得注意的是，当访问到某个响应式数组或 Map 这样的原生集合类型中的 ref 元素时，不会执行 ref 的解包。
 
-## [computed](https://cn.vuejs.org/api/reactivity-core.html#computed)原理
+## Computed 和 Watch
+### Computed
++ 它支持缓存，只有依赖的数据发生了变化，才会重新计算
++ 不支持异步，当Computed中有异步操作时，无法监听数据的变化
++ computed的值会默认走缓存，计算属性是基于它们的响应式依赖进行缓存的，也就是基于data声明过，或者父组件传递过来的props中的数据进行计算的。
++ 如果一个属性是由其他属性计算而来的，这个属性依赖其他的属性，一般会使用computed
++ 如果computed属性的属性值是函数，那么默认使用get方法，函数的返回值就是属性的属性值；在computed中，属性有一个get方法和一个set方法，当数据发生变化时，会调用set方法。
+#### [computed](https://cn.vuejs.org/api/reactivity-core.html#computed)原理
 接受一个 getter 函数，返回一个只读的响应式 ref 对象。该 ref 通过.value暴露 getter 函数的返回值。它也可以接受一个带有 get 和 set 函数的对象来创建一个可写的 ref 对象。
 
-## watch和watchEffect的区别
+#### Computed 和 Methods 的区别
++ 相同点：可以将同一函数定义为一个 method 或者一个计算属性。对于最终的结果，两种方式是相同的
++ 不同点：computed: 计算属性是基于它们的依赖进行缓存的，只有在它的相关依赖发生改变时才会重新求值；method 调用总会执行该函数。
+
+### Watch
++ 它不支持缓存，数据变化时，它就会触发相应的操作
++ 支持异步监听
++ 监听的函数接收两个参数，第一个参数是最新的值，第二个是变化之前的值
++ 当一个属性发生变化时，就需要执行相应的操作
++ 监听数据必须是data中声明的或者父组件传递过来的props中的数据，当发生变化时，会触发其他操作，函数有两个的参数：
++ immediate：组件加载立即触发回调函数
++ deep：深度监听，发现数据内部的变化，在复杂数据类型中使用，例如数组中的对象发生变化。需要注意的是，deep无法监听到数组和对象内部的变化。
++ 当想要执行异步或者昂贵的操作以响应不断的变化时，就需要使用watch。
+
+### watch和watchEffect的区别
 watch里面配置immediate才会默认执行一次，watchEffect不需要配置immediate，本身默认就会进行监视。
 非响应式的参数可使用 ()=>参数 的方法来实现响应。
+
+### 总结
++ computed 计算属性 : 依赖其它属性值，并且 computed 的值有缓存，只有它依赖的属性值发生改变，下一次获取 computed 的值时才会重新计算 computed 的值。
++ watch 侦听器 : 更多的是**观察**的作用，**无缓存性**，类似于某些数据的监听回调，每当监听的数据变化时都会执行回调进行后续操作。
+
+### 运用场景
++ 当需要进行数值计算,并且依赖于其它数据时，应该使用 computed，因为可以利用 computed 的缓存特性，避免每次获取值时都要重新计算。
++ 当需要在数据变化时执行异步或开销较大的操作时，应该使用 watch，使用 watch 选项允许执行异步操作 ( 访问一个 API )，限制执行该操作的频率，并在得到最终结果前，设置中间状态。这些都是计算属性无法做到的。
+
+## 常见的事件修饰符及其作用
+**.stop**：等同于 JavaScript 中的 event.stopPropagation() ，防止事件冒泡；
+
+**.prevent** ：等同于 JavaScript 中的 event.preventDefault() ，防止执行预设的行为（如果事件可取消，则取消该事件，而不停止事件的进一步传播）；
+
+**.capture** ：与事件冒泡的方向相反，事件捕获由外到内；
+
+**.self** ：只会触发自己范围内的事件，不包含子元素；
+
+**.once** ：只会触发一次。
 ## 收集表单数据
 ![Alt text](/public/images/progress_vue/image-4.png)
 ```
@@ -228,9 +268,9 @@ watch里面配置immediate才会默认执行一次，watchEffect不需要配置i
 Vue3的生命周期示意图如下：
 ![Alt text](/public/images/progress_vue/image-1.png)
 Vue2的生命周期示意图如下：
-![Alt text](/public/images/base_http/image-2.png)
+![Alt text](/public/images/progress_vue/image-2.png)
 代码示意：
-![Alt text](/public/images/base_http/image-3.png)
+![Alt text](/public/images/progress_vue/image-3.png)
 
 ## vue组件封装原则
 1. 数据从父组件传入；
@@ -630,6 +670,13 @@ let todos = ref([
 <style scoped>
 </style>
 ```
+## 子组件可以直接改变父组件的数据吗？
+子组件不可以直接改变父组件的数据。这样做主要是为了维护父子组件的单向数据流。每次父级组件发生更新时，子组件中所有的 prop 都将会刷新为最新的值。如果这样做了，Vue 会在浏览器的控制台中发出警告。
+
+Vue提倡单向数据流，即父级 props 的更新会流向子组件，但是反过来则不行。这是为了防止意外的改变父组件状态，使得应用的数据流变得难以理解，导致数据流混乱。如果破坏了单向数据流，当应用复杂时，debug 的成本会非常高。
+
+**只能通过 $emit 派发一个自定义事件，父组件接收到后，由父组件修改。**
+
 
 ## [Pina](https://pinia.vuejs.org/zh/core-concepts/)和[vuex](https://vuex.vuejs.org/zh/)
 Pina和vuex都可用于Vue 的状态管理库。
@@ -639,18 +686,211 @@ __对比 Vuex__
 Pinia 起源于一次探索 Vuex 下一个迭代的实验，因此结合了 Vuex 5 核心团队讨论中的许多想法。最后，我们意识到 Pinia 已经实现了我们在 Vuex 5 中想要的大部分功能，所以决定将其作为新的推荐方案来代替 Vuex。
 
 与 Vuex 相比，Pinia 不仅提供了一个更简单的 API，也提供了符合组合式 API 风格的 API，最重要的是，搭配 TypeScript 一起使用时有非常可靠的类型推断支持。
-## keep-alive
-### 1. keep-alive原理
-他是通过一个算法，对页面进行缓存。使用频率搞的会放上面，使用频率少的会在最后，如果最后装满了，使用频率不高的，会清除掉。
-使用场景，一般是列表去详情，然后回来，缓存列表。 还加一个生命周期，activityed ，如果缓存命中后会调用这个方法。
-### 2. keep-alive 中的生命周期哪些
-keep-alive是 Vue 提供的一个内置组件，用来对组件进行缓存——在组件切换过程中将状态保留在内存中，防止重复渲染DOM。
+## 对keep-alive的理解，它是如何实现的，具体缓存的是什么？
+如果需要在组件切换的时候，保存一些组件的状态防止多次渲染，就可以使用 keep-alive 组件包裹需要保存的组件。
 
-如果为一个组件包裹了 keep-alive，那么它会多出两个生命周期：deactivated、activated。同时，beforeDestroy 和 destroyed 就不会再被触发了，因为组件不会被真正销毁。
+keep-alive有以下三个属性：
 
-当组件被换掉时，会被缓存到内存中、触发 deactivated 生命周期；当组件被切回来时，再去缓存里找这个组件、触发 activated钩子函数。
++ include 字符串或正则表达式，只有名称匹配的组件会被匹配；
++ exclude 字符串或正则表达式，任何名称匹配的组件都不会被缓存；
++ max 数字，最多可以缓存多少组件实例。
 
+注意：keep-alive 包裹动态组件时，会缓存不活动的组件实例。
 
+### 主要流程
+1. 判断组件 name ，不在 include 或者在 exclude 中，直接返回 vnode，说明该组件不被缓存。
+2. 获取组件实例 key ，如果有获取实例的 key，否则重新生成。
+3. key生成规则，cid +"∶∶"+ tag ，仅靠cid是不够的，因为相同的构造函数可以注册为不同的本地组件。
+4. 如果缓存对象内存在，则直接从缓存对象中获取组件实例给 vnode ，不存在则添加到缓存对象中。 
+5. 最大缓存数量，当缓存组件数量超过 max 值时，清除 keys 数组内第一个组件。
+
+### keep-alive 的实现
+```
+const patternTypes: Array<Function> = [String, RegExp, Array] // 接收：字符串，正则，数组
+
+export default {
+  name: 'keep-alive',
+  abstract: true, // 抽象组件，是一个抽象组件：它自身不会渲染一个 DOM 元素，也不会出现在父组件链中。
+
+  props: {
+    include: patternTypes, // 匹配的组件，缓存
+    exclude: patternTypes, // 不去匹配的组件，不缓存
+    max: [String, Number], // 缓存组件的最大实例数量, 由于缓存的是组件实例（vnode），数量过多的时候，会占用过多的内存，可以用max指定上限
+  },
+
+  created() {
+    // 用于初始化缓存虚拟DOM数组和vnode的key
+    this.cache = Object.create(null)
+    this.keys = []
+  },
+
+  destroyed() {
+    // 销毁缓存cache的组件实例
+    for (const key in this.cache) {
+      pruneCacheEntry(this.cache, key, this.keys)
+    }
+  },
+
+  mounted() {
+    // prune 削减精简[v.]
+    // 去监控include和exclude的改变，根据最新的include和exclude的内容，来实时削减缓存的组件的内容
+    this.$watch('include', (val) => {
+      pruneCache(this, (name) => matches(val, name))
+    })
+    this.$watch('exclude', (val) => {
+      pruneCache(this, (name) => !matches(val, name))
+    })
+  },
+}
+```
+
+### render函数：
+1. 会在 keep-alive 组件内部去写自己的内容，所以可以去获取默认 slot 的内容，然后根据这个去获取组件。
+
+2. keep-alive 只对第一个组件有效，所以获取第一个子组件。
+
+3. 和 keep-alive 搭配使用的一般有：动态组件 和router-view。
+```
+render () {
+  //
+  function getFirstComponentChild (children: ?Array<VNode>): ?VNode {
+    if (Array.isArray(children)) {
+  for (let i = 0; i < children.length; i++) {
+    const c = children[i]
+    if (isDef(c) && (isDef(c.componentOptions) || isAsyncPlaceholder(c))) {
+      return c
+    }
+  }
+  }
+  }
+  const slot = this.$slots.default // 获取默认插槽
+  const vnode: VNode = getFirstComponentChild(slot)// 获取第一个子组件
+  const componentOptions: ?VNodeComponentOptions = vnode && vnode.componentOptions // 组件参数
+  if (componentOptions) { // 是否有组件参数
+    // check pattern
+    const name: ?string = getComponentName(componentOptions) // 获取组件名
+    const { include, exclude } = this
+    if (
+      // not included
+      (include && (!name || !matches(include, name))) ||
+      // excluded
+      (exclude && name && matches(exclude, name))
+    ) {
+      // 如果不匹配当前组件的名字和include以及exclude
+      // 那么直接返回组件的实例
+      return vnode
+    }
+
+    const { cache, keys } = this
+
+    // 获取这个组件的key
+    const key: ?string = vnode.key == null
+      // same constructor may get registered as different local components
+      // so cid alone is not enough (#3269)
+      ? componentOptions.Ctor.cid + (componentOptions.tag ? `::${componentOptions.tag}` : '')
+      : vnode.key
+
+    if (cache[key]) {
+      // LRU缓存策略执行
+      vnode.componentInstance = cache[key].componentInstance // 组件初次渲染的时候componentInstance为undefined
+
+      // make current key freshest
+      remove(keys, key)
+      keys.push(key)
+      // 根据LRU缓存策略执行，将key从原来的位置移除，然后将这个key值放到最后面
+    } else {
+      // 在缓存列表里面没有的话，则加入，同时判断当前加入之后，是否超过了max所设定的范围，如果是，则去除
+      // 使用时间间隔最长的一个
+      cache[key] = vnode
+      keys.push(key)
+      // prune oldest entry
+      if (this.max && keys.length > parseInt(this.max)) {
+        pruneCacheEntry(cache, keys[0], keys, this._vnode)
+      }
+    }
+    // 将组件的keepAlive属性设置为true
+    vnode.data.keepAlive = true // 作用：判断是否要执行组件的created、mounted生命周期函数
+  }
+  return vnode || (slot && slot[0])
+}
+```
+
+keep-alive 具体是通过 cache 数组缓存所有组件的 vnode 实例。当 cache 内原有组件被使用时会将该组件 key 从 keys 数组中删除，然后 push 到 keys数组最后，以便清除最不常用组件。
+
+### 实现步骤：
+1. 获取 keep-alive 下第一个子组件的实例对象，通过他去获取这个组件的组件名
+
+2. 通过当前组件名去匹配原来 include 和 exclude，判断当前组件是否需要缓存，不需要缓存，直接返回当前组件的实例vNode
+
+3. 需要缓存，判断他当前是否在缓存数组里面：
+
+存在，则将他原来位置上的 key 给移除，同时将这个组件的 key 放到数组最后面（LRU）
+不存在，将组件 key 放入数组，然后判断当前 key数组是否超过 max 所设置的范围，超过，那么削减未使用时间最长的一个组件的 key
+4. 最后将这个组件的 keepAlive 设置为 true
+
+### keep-alive 本身的创建过程和 patch 过程
+缓存渲染的时候，会根据 vnode.componentInstance（首次渲染 vnode.componentInstance 为 undefined） 和 keepAlive 属性判断不会执行组件的 created、mounted 等钩子函数，而是对缓存的组件执行 patch 过程∶ 直接把缓存的 DOM 对象直接插入到目标元素中，完成了数据更新的情况下的渲染过程。
+
+### 首次渲染
++ 组件的首次渲染∶判断组件的 abstract 属性，才往父组件里面挂载 DOM
+```
+// core/instance/lifecycle
+function initLifecycle (vm: Component) {
+  const options = vm.$options
+
+  // locate first non-abstract parent
+  let parent = options.parent
+  if (parent && !options.abstract) { // 判断组件的abstract属性，才往父组件里面挂载DOM
+    while (parent.$options.abstract && parent.$parent) {
+      parent = parent.$parent
+    }
+    parent.$children.push(vm)
+  }
+
+  vm.$parent = parent
+  vm.$root = parent ? parent.$root : vm
+
+  vm.$children = []
+  vm.$refs = {}
+
+  vm._watcher = null
+  vm._inactive = null
+  vm._directInactive = false
+  vm._isMounted = false
+  vm._isDestroyed = false
+  vm._isBeingDestroyed = false
+}
+```
+
+判断当前 keepAlive 和 componentInstance 是否存在来判断是否要执行组件 prepatch 还是执行创建 componentlnstance
+
+```
+// core/vdom/create-component
+init (vnode: VNodeWithData, hydrating: boolean): ?boolean {
+    if (
+      vnode.componentInstance &&
+      !vnode.componentInstance._isDestroyed &&
+      vnode.data.keepAlive
+    ) { // componentInstance在初次是undefined!!!
+      // kept-alive components, treat as a patch
+      const mountedNode: any = vnode // work around flow
+      componentVNodeHooks.prepatch(mountedNode, mountedNode) // prepatch函数执行的是组件更新的过程
+    } else {
+      const child = vnode.componentInstance = createComponentInstanceForVnode(
+        vnode,
+        activeInstance
+      )
+      child.$mount(hydrating ? vnode.elm : undefined, hydrating)
+    }
+  },
+```
+prepatch 操作就不会在执行组件的 mounted 和 created 生命周期函数，而是直接将 DOM 插入。
+
+### LRU （least recently used）缓存策略
+LRU 缓存策略∶ 从内存中找出最久未使用的数据并置换新的数据。 LRU（Least rencently used）算法根据数据的历史访问记录来进行淘汰数据，其核心思想是 "如果数据最近被访问过，那么将来被访问的几率也更高"。 最常见的实现是使用一个链表保存缓存数据，详细算法实现如下∶
++ 新数据插入到链表头部
++ 每当缓存命中（即缓存数据被访问），则将数据移到链表头部
++ 链表满的时候，将链表尾部的数据丢弃。
 ## $nextTick 原理及作用
 Vue 的 nextTick 其本质是对 JavaScript 执行原理 EventLoop 的一种应用。
 
@@ -845,6 +1085,39 @@ devServer: {
     historyApiFallback: true, // 解决vue-router刷新404问题
   },
 ```
+
+## Vue的性能优化有哪些
+
+### 编码阶段
+
++ 尽量减少data中的数据，data中的数据都会增加getter和setter，会收集对应的watcher
++ v-if和v-for不能连用
++ 如果需要使用v-for给每项元素绑定事件时使用事件代理
++ SPA 页面采用keep-alive缓存组件
++ 在更多的情况下，使用v-if替代v-show
++ key保证唯一
++ 使用路由懒加载、异步组件
++ 防抖、节流
++ 第三方模块按需导入
++ 长列表滚动到可视区域动态加载
++ 图片懒加载
+### SEO优化
+
+预渲染
+服务端渲染SSR
+### 打包优化
+
+压缩代码
+Tree Shaking/Scope Hoisting
+使用cdn加载第三方模块
+多线程打包happypack
+splitChunks抽离公共文件
+sourceMap优化
+### 用户体验
+
+骨架屏
+PWA
+还可以使用缓存(客户端缓存、服务端缓存)优化、服务端开启gzip压缩等。
 
 
 ## 参考来源
