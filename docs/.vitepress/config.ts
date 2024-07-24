@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitepress'
-import { nav,sidebar } from './relaConf'
+import { nav, sidebar } from './relaConf'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -18,6 +18,6 @@ export default defineConfig({
       provider: 'local'
     }
   },
-  base:'/blog_vitepress/',
-  outDir:'../blog_vitepress'
+  base: '/blog_vitepress/',
+  outDir: '/blog_vitepress/'
 })
